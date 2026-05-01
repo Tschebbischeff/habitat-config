@@ -1,0 +1,16 @@
+name: ${APP_NAME_HOST}
+
+services:
+
+  habitat-config:
+    image: tschebbischeff/habitat-config:latest
+    container_name: ${APP_NAME_HOST}_habitat-config
+    restart: no
+    env_file:
+      - ./.env
+      - path: ${ENV_DIR}/.env
+        required: false
+      - path: ${ENV_DIR}/habitat-config.env
+        required: false
+    networks:
+      internal:
