@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+PLATFORMS="linux/amd64,linux/arm64"
+
 repositoryNamespace=""
 pushAfterBuild="_"
 while [ "$#" -gt "0" ]; do
@@ -20,22 +22,22 @@ currentVersionMaj="$(echo "$currentVersion" | grep -Po '^(0|[1-9][0-9]*)')"
 currentVersionMajMin="$(echo "$currentVersion" | grep -Po '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)')"
 currentVersionMajMinPat="$(echo "$currentVersion" | grep -Po '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)')"
 
-docker buildx create \
-    --use \
-    --name habitat-config-builder \
-    node-amd64
-docker buildx create \
-    --append \
-    --name habitat-config-builder \
-    node-arm64
+# docker run --privileged --rm tonistiigi/binfmt --install all
 
-docker build \
+docker buildx create \
+    --use --bootstrap \
+    --driver docker-container \
+    --name habitat-config-builder
+
+docker buildx build \
     -t "$([ -n "$repositoryNamespace" ] && echo "$repositoryNamespace/")habitat-config:$currentVersionMajMinPat" \
     -t "$([ -n "$repositoryNamespace" ] && echo "$repositoryNamespace/")habitat-config:$currentVersionMajMin" \
     -t "$([ -n "$repositoryNamespace" ] && echo "$repositoryNamespace/")habitat-config:$currentVersionMaj" \
     -t "$([ -n "$repositoryNamespace" ] && echo "$repositoryNamespace/")habitat-config:latest" \
-    --platform linux/amd64,linux/arm64 \
+    --platform "$PLATFORMS" \
+    --builder habitat-config-builder \
     "$([ -n "$pushAfterBuild" ] && echo "--push")" \
     ./habitat-config
 
 docker buildx stop habitat-config-builder
+docker buildx rm habitat-config-builder
