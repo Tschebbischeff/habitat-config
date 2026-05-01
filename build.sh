@@ -15,8 +15,8 @@ done
 
 currentVersion="$(cat ./metadata.json | jq -r '.version')"
 currentVersionMaj="$(echo "$currentVersion" | grep -Po '^(0|[1-9][0-9]*)')"
-currentVersionMajMin="$(echo "$currentVersion" | grep -Po '^(0|[1-9][0-9]*)\.\K(0|[1-9][0-9]*)')"
-currentVersionMajMinPat="$(echo "$currentVersion" | grep -Po '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.\K(0|[1-9][0-9]*)')"
+currentVersionMajMin="$(echo "$currentVersion" | grep -Po '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)')"
+currentVersionMajMinPat="$(echo "$currentVersion" | grep -Po '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)')"
 
 docker build \
     -t "$([ -n "$repositoryNamespace" ] && echo "$repositoryNamespace/")habitat-config:$currentVersionMajMinPat" \
