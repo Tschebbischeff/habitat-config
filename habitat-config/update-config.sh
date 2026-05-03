@@ -2,15 +2,13 @@
 
 # ### Init
 
-cd "/habitat-config" || exit 1
-
 [ -z "${APP_SESSION_ID}" ] && { echo "No APP_SESSION_ID provided, cannot synchronize configuration."; exit 1; }
 [ -z "${MODULE_NAME}" ] && { echo "No MODULE_NAME provided, cannot synchronize configuration."; exit 1; }
 
-ORCH_PATH="./orchestration"
+ORCH_PATH="/habitat-config/orchestration"
 ORCH_SESSION_PATH="$ORCH_PATH/${APP_SESSION_ID}"
-SRC_PATH="./source"
-TGT_PATH="./target"
+SRC_PATH="/habitat-config/source"
+TGT_PATH="/habitat-config/target"
 declare -a CONSUMERS
 [ -d "$SRC_PATH/.consume" ] && for filePath in "$SRC_PATH/.consume/"*; do
     fileName="$(basename "$filePath")"
@@ -76,21 +74,6 @@ for serviceSrcPath in "$SRC_PATH/"*; do
     fi
     echo "Copying configuration for target '$consumerName'..."
     cp -rp "$serviceSrcPath" "$ORCH_SESSION_PATH/$consumerName/${MODULE_NAME}"
-    # # Traefik
-    # if [ -d "$SRC_PATH/traefik" ]; then
-    #     echo "Applying traefik config:"
-    #     for f in "./source/traefik/dynamic/"*; do
-    #         filename=$(basename -- "$f")
-    #         extension="${filename##*.}"
-    #         filename="${filename%.*}"
-    #         echo " $f -> ./target/traefik/$filename.$moduleName.$extension"
-    #         cp -f "$f" "./target/traefik/$filename.$moduleName.$extension";
-    #     done
-    #     if inArray "traefik" "${#WAIT_ON_TARGETS[@]}"; then
-    #     fi
-    # else
-    #     echo "No traefik config to apply from this module."
-    # fi
 done
 [ -z "$anyProviders" ] && echo "This module does not provide any configuration."
 touch "$ORCH_SESSION_PATH/.${MODULE_NAME}.finished"
