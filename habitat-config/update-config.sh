@@ -18,9 +18,20 @@ declare -a CONSUMERS
     consumerName="${fileName%.*}"
     CONSUMERS["${#CONSUMERS[@]}"]="$consumerName"
 done
+IFS="," read -r -a tmp_modules <<< "${APP_MODULES}"
+declare -a MODULES
+for moduleName in "${tmp_modules[@]}"; do
+    MODULES[${#MODULES[@]}]="$(echo "$moduleName" | xargs)"
+done
+
+echo "*** Habitat Configuration Sidecar for Module '${APP_MODULE_NAME}'"
+echo "Session ID: ${APP_SESSION_ID}"
+echo "Modules: ${MODULES[*]}"
 
 
 # ### Init Orchestration
+
+echo "*** Orchestration"
 
 for dirPath in "$ORCH_PATH"*; do
     [ ! "$(basename "$dirPath")" == "${APP_SESSION_ID}" ] && rm -rf "$dirPath" 2>/dev/null
@@ -37,7 +48,7 @@ touch "$ORCH_SESSION_PATH/.${APP_MODULE_NAME}.started"
 echo "Waiting for all modules to start..."
 while :; do
     sleep 1
-    for moduleName in "${APP_MODULES[@]}"; do
+    for moduleName in "${MODULES[@]}"; do
         [ ! -f "$ORCH_SESSION_PATH/.$moduleName.started" ] && continue
     done
     break
@@ -85,7 +96,7 @@ echo "*** Consuming configuration..."
 finalExitCode="0"
 if [ "${#CONSUMERS[@]}" -gt "0" ]; then
     echo "Waiting for all modules to finish their providing stage..."
-    for moduleName in "${APP_MODULES[@]}"; do
+    for moduleName in "${MODULES[@]}"; do
         [ ! -f "$ORCH_SESSION_PATH/.$moduleName.finished" ] && continue
     done
     for consumerName in "${CONSUMERS[@]}"; do
