@@ -85,9 +85,15 @@ echo "*** Consuming configuration..."
 finalExitCode="0"
 if [ "${#CONSUMERS[@]}" -gt "0" ]; then
     echo "Waiting for all modules to finish their providing stage..."
-    for moduleName in "${MODULES[@]}"; do
-        [ ! -f "$ORCH_SESSION_PATH/.$moduleName.finished" ] && continue
+    while :; do
+        sleep 1
+        allFinished="_"
+        for moduleName in "${MODULES[@]}"; do
+            [ -f "$ORCH_SESSION_PATH/.$moduleName.finished" ] || allFinished=""
+        done
+        [ -n "$allFinished" ] && break
     done
+    echo "All modules finished providing stage."
     for consumerName in "${CONSUMERS[@]}"; do
         if [ -z "$(ls -A "$ORCH_SESSION_PATH/$consumerName")" ]; then
             echo "No modules have provided configuration for target '$consumerName', skipping execution of consumer."
