@@ -35,7 +35,7 @@ echo "Modules: ${MODULES[*]}"
 
 echo "*** Orchestration"
 
-for dirPath in "$ORCH_PATH"*; do
+for dirPath in "$ORCH_PATH/"*; do
     [ "$(basename "$dirPath")" != "${APP_SESSION_ID}" ] && rm -rf "$dirPath" 2>/dev/null
 done
 if [ -d "$ORCH_SESSION_PATH" ] && [ -f "$ORCH_SESSION_PATH/.${MODULE_NAME}.finished" ]; then
