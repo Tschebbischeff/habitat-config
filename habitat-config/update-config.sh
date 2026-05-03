@@ -27,6 +27,7 @@ done
 echo "*** Habitat Configuration Sidecar for Module '${APP_MODULE_NAME}'"
 echo "Session ID: ${APP_SESSION_ID}"
 echo "Modules: ${MODULES[*]}"
+{ [ "${#CONSUMERS[@]}" -gt "0" ] && echo "Consumers: ${CONSUMERS[*]}"; } || echo "Consumers: (None)"
 
 
 # ### Init Orchestration
@@ -34,9 +35,12 @@ echo "Modules: ${MODULES[*]}"
 echo "*** Orchestration"
 
 for dirPath in "$ORCH_PATH"*; do
-    [ ! "$(basename "$dirPath")" == "${APP_SESSION_ID}" ] && rm -rf "$dirPath" 2>/dev/null
+    [ "$(basename "$dirPath")" != "${APP_SESSION_ID}" ] && rm -rf "$dirPath" 2>/dev/null
 done
-[ ! -d "$ORCH_SESSION_PATH" ] || { echo "This session has already been configured. Skipping everything and exiting with assumed success."; exit 0; }
+if [ -d "$ORCH_SESSION_PATH" ] && [ -f "$ORCH_SESSION_PATH/.${APP_MODULE_NAME}.finished" ]; then
+    echo "This session has already been configured. Skipping everything and exiting with assumed success."
+    exit 0
+fi
 mkdir -p "$ORCH_SESSION_PATH"
 
 for consumerName in "${CONSUMERS[@]}"; do
@@ -48,10 +52,11 @@ touch "$ORCH_SESSION_PATH/.${APP_MODULE_NAME}.started"
 echo "Waiting for all modules to start..."
 while :; do
     sleep 1
+    allStarted="_"
     for moduleName in "${MODULES[@]}"; do
-        [ ! -f "$ORCH_SESSION_PATH/.$moduleName.started" ] && continue
+        [ -f "$ORCH_SESSION_PATH/.$moduleName.started" ] || allStarted=""
     done
-    break
+    [ -n "$allStarted" ] && break
 done
 echo "All modules started."
 
