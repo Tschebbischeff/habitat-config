@@ -1,6 +1,6 @@
 FROM alpine
 
-RUN apk add bash jq yq
+RUN apk -U add bash jq yq findutils
 
 COPY ./update-config.sh /update-config.sh
 RUN chmod +x /update-config.sh
