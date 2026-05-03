@@ -6,9 +6,10 @@ volumes:
 
 services:
 
-  habitat-config:
+  # Replace YOURMODULENAME with your actual module's name!
+  habitat-config-YOURMODULENAME:
     image: tschebbischeff/habitat-config:latest
-    container_name: ${APP_NAME_HOST}_${APP_MODULE_NAME}_habitat-config
+    container_name: ${APP_NAME_HOST}_habitat-config-YOURMODULENAME
     restart: no
     env_file:
       - ./.env
@@ -16,6 +17,8 @@ services:
         required: false
       - path: ${ENV_DIR}/habitat-config.env
         required: false
+    environment:
+      MODULE_NAME: "YOURMODULENAME"
     networks:
       internal:
     volumes:

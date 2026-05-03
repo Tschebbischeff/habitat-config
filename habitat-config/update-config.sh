@@ -5,6 +5,7 @@
 cd "/habitat-config" || exit 1
 
 [ -z "${APP_SESSION_ID}" ] && { echo "No APP_SESSION_ID provided, cannot synchronize configuration."; exit 1; }
+[ -z "${MODULE_NAME}" ] && { echo "No MODULE_NAME provided, cannot synchronize configuration."; exit 1; }
 
 ORCH_PATH="./orchestration"
 ORCH_SESSION_PATH="$ORCH_PATH/${APP_SESSION_ID}"
@@ -24,7 +25,7 @@ for moduleName in "${tmp_modules[@]}"; do
     MODULES[${#MODULES[@]}]="$(echo "$moduleName" | xargs)"
 done
 
-echo "*** Habitat Configuration Sidecar for Module '${APP_MODULE_NAME}'"
+echo "*** Habitat Configuration Sidecar for Module '${MODULE_NAME}'"
 echo "Session ID: ${APP_SESSION_ID}"
 echo "Modules: ${MODULES[*]}"
 { [ "${#CONSUMERS[@]}" -gt "0" ] && echo "Consumers: ${CONSUMERS[*]}"; } || echo "Consumers: (None)"
@@ -37,7 +38,7 @@ echo "*** Orchestration"
 for dirPath in "$ORCH_PATH"*; do
     [ "$(basename "$dirPath")" != "${APP_SESSION_ID}" ] && rm -rf "$dirPath" 2>/dev/null
 done
-if [ -d "$ORCH_SESSION_PATH" ] && [ -f "$ORCH_SESSION_PATH/.${APP_MODULE_NAME}.finished" ]; then
+if [ -d "$ORCH_SESSION_PATH" ] && [ -f "$ORCH_SESSION_PATH/.${MODULE_NAME}.finished" ]; then
     echo "This session has already been configured. Skipping everything and exiting with assumed success."
     exit 0
 fi
@@ -48,7 +49,7 @@ for consumerName in "${CONSUMERS[@]}"; do
     [ -d "$ORCH_SESSION_PATH/$consumerName" ] && rm -rf "$ORCH_SESSION_PATH/$consumerName"
     mkdir -p "$ORCH_SESSION_PATH/$consumerName"
 done
-touch "$ORCH_SESSION_PATH/.${APP_MODULE_NAME}.started"
+touch "$ORCH_SESSION_PATH/.${MODULE_NAME}.started"
 echo "Waiting for all modules to start..."
 while :; do
     sleep 1
@@ -74,7 +75,7 @@ for serviceSrcPath in "$SRC_PATH/"*; do
         continue
     fi
     echo "Copying configuration for target '$consumerName'..."
-    cp -rp "$serviceSrcPath" "$ORCH_SESSION_PATH/$consumerName/${APP_MODULE_NAME}"
+    cp -rp "$serviceSrcPath" "$ORCH_SESSION_PATH/$consumerName/${MODULE_NAME}"
     # # Traefik
     # if [ -d "$SRC_PATH/traefik" ]; then
     #     echo "Applying traefik config:"
@@ -92,7 +93,7 @@ for serviceSrcPath in "$SRC_PATH/"*; do
     # fi
 done
 [ -z "$anyProviders" ] && echo "This module does not provide any configuration."
-touch "$ORCH_SESSION_PATH/.${APP_MODULE_NAME}.finished"
+touch "$ORCH_SESSION_PATH/.${MODULE_NAME}.finished"
 
 # ### Merge Configurations on Consumer Side
 
