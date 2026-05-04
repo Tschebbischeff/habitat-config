@@ -11,7 +11,7 @@ MODULE_CONSUMER_SCRIPT="$2"
 [ -x "$MODULE_CONSUMER_SCRIPT" ] || { echo "Consumer script '$MODULE_CONSUMER_SCRIPT' is not executable."; exit 1; }
 
 IFS="," read -r -a tmp_modules <<< "${APP_MODULES}"
-declare -a MODULES
+MODULES=()
 for moduleName in "${tmp_modules[@]}"; do
     MODULES[${#MODULES[@]}]="$(echo "$moduleName" | xargs)"
 done
