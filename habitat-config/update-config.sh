@@ -8,7 +8,6 @@
 ORCH_PATH="/habitat-config/orchestration"
 ORCH_SESSION_PATH="$ORCH_PATH/${APP_SESSION_ID}"
 SRC_PATH="/habitat-config/source"
-TGT_PATH="/habitat-config/target"
 declare -a CONSUMERS
 [ -d "$SRC_PATH/.consume" ] && for filePath in "$SRC_PATH/.consume/"*; do
     fileName="$(basename "$filePath")"
@@ -99,8 +98,10 @@ if [ "${#CONSUMERS[@]}" -gt "0" ]; then
             echo "No modules have provided configuration for target '$consumerName', skipping execution of consumer."
         fi
         echo "Starting consumer for target '$consumerName'..."
-        if ! "$SRC_PATH/.consume/$consumerName.sh" "$ORCH_SESSION_PATH/$consumerName" "$TGT_PATH/$consumerName"; then
-            echo "Consumer for target '$consumerName' failed with exit code: $?"
+        "$SRC_PATH/.consume/$consumerName.sh" "$ORCH_SESSION_PATH/$consumerName"
+        exitCode="$?"
+        if [ "$exitCode" -ne "0" ]; then
+            echo "Consumer for target '$consumerName' failed with exit code: $exitCode"
             finalExitCode="2"
         fi
     done

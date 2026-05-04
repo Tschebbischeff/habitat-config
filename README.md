@@ -38,7 +38,8 @@ Each of the modules is designed as an opinionated docker stack that can be deplo
  Based on priority numbers select which module's configuration takes precedence in merging or whether to completely override a configuration file.
 
 ### Planned
- - *(None)*
+ - **Generalized Merge and Override Logic** \
+ Modules implementing consumers should simply get the result of the merge and override for the most common config file types (YAML, JSON, INI, etc.)
 
 ## Getting Started
 
@@ -77,6 +78,27 @@ Example:
 ### Run the Sidecar
 
  - In your module's compose.yml define a habitat-config sidecar container according to the [example compose.yml](./examples/compose.yml).
+
+### Consume Configuration
+
+To consume configuration means to apply merging and overrides according to the rules, then make the configuration available to one or multiple services inside your module in a form they expect.
+
+To consume configuration you must define a consumer script inside the `habitat-config/.consume` folder of your module.
+
+It must be a shell script and the name of the script is the "name of the consumer".
+
+E.g. `habitat-config/.consume/my_service_consumer.sh` defines that your sidecar will manage configuration files that other modules (or your own) place inside `habitat-config/my_service_consumer`.
+
+The script is called after all modules have started and made their configuration available via the shared `habitat-config` volume.
+
+The script receives one argument, the "source path", containing one folder for each module that provided configuration for your consumer. \
+The source path may therefore be an empty directory.
+
+After applying merges and overrides your consumer can copy the final configuration to other mounted volumes which can be mounted in other services of your modules.
+By convention you should mount these volumes at `/habitat-config/target/my_service_consumer` within your sidecar container.
+
+You can check the habitat-path module's [traefik config consumer](https://github.com/Tschebbischeff/habitat-path/blob/main/habitat-config/.consume/traefik.sh) to see how a consumer script could be defined.
+
 
 ## Build
 
