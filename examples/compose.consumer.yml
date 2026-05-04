@@ -1,0 +1,35 @@
+name: ${APP_NAME_HOST}
+
+volumes:
+  habitat-config:
+  my-service-config:
+
+
+services:
+
+  # Replace YOURMODULENAME with your actual module's name!
+  habitat-config-YOURMODULENAME:
+    image: tschebbischeff/habitat-config:latest
+    container_name: ${APP_NAME_HOST}_habitat-config-YOURMODULENAME
+    restart: no
+    env_file:
+      - ./.env
+      - path: ${ENV_DIR}/.env
+        required: false
+      - path: ${ENV_DIR}/habitat-config.env
+        required: false
+    environment:
+      MODULE_NAME: "YOURMODULENAME"
+    networks:
+      internal:
+    volumes:
+      - habitat-config:/habitat-config/orchestration
+      - ./habitat-config:/habitat-config/source:ro
+      - my-service-config:/habitat-config/target/my-service
+
+  my-service:
+    volumes:
+      - my-service-config:/path/to/config/dir:ro
+    depends_on:
+      habitat-config-YOURMODULENAME:
+        condition: service_completed_successfully

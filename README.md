@@ -50,54 +50,96 @@ This is not a Habitat module on its own, its designed as an interface so modules
  - Create a habitat-config folder inside your module and place folders and files required for the cross-module configuration inside
  - Check which folders and files to create for the module in the documentation of that module
 
+#### File Prioritization
+
 You can merge or override configuration files supplied by other modules via the filename. \
-A configuration file's base name (before extension) can be suffixed with `.hbtprio-000` or `.hbtprio-override-000` to merge or override the base file at a specific point in the chain (`000` is the priority number).
+A configuration file's base name (before extension) can be suffixed with instructions for prioritization and overriding, e.g.:
+ - `base.hbt-000.yml` to prioritize this file over `base.yml`
+ - `base.hbt-override-000.yml` to override `base.yml` with this file
+ - The `override` keyword can be shortened to `over` or just `o`, i.e. `base.hbt-over-000.yml` and `base.hbt-o-000.yml` can be used aswell
+   - Should multiple files exist, which differ only in the form of the override keyword the order of overrides is shortest first: \
+   `base.hbt-o-000.yml` | `base.hbt-over-000-yml` | `base.hbt-override-000.yml`
 
-I.e.: \
+The prioritization number at the end applies as follows: \
+`base.yml` < `base.hbt-000.yml` < `base.hbt-001.yml` | `base.hbt-o-001.yml` | `base.hbt-over-001.yml` | `base.hbt-override-001.yml` < `base.hbt-002.yml`
+
 (`A < B` means B is merged into A; `... | C` means all previous files are replaced by C) \
-`base.yml` < `base.hbtprio-000.yml` < `base.hbtprio-001.yml` | `base.hbtprio-override-001.yml` < `base.hbtprio-002.yml`
 
-All files with the exact same name (even if they define a priority) are merged before priorities are applied. \
-*The merge order for files with the exact same name is undefined!*
+All files with the exact same name (even if they define a priority) are merged in the order in which modules are listed in the APP_MODULES environment variable. Later list entries are merged into/ override earlier ones. \
+This step happens before the actual prioritization instructions are processed.
 
-Example:
+Extensive Example:
+ - Let `APP_MODULES="module-a,module-b,module-d,module-c,module-e,module-f,module-g"`
  - Module A provides `{habitat-config}/foo/bar.json`
- - Module B provides `{habitat-config}/foo/bar.hbtprio-000.json`
+ - Module B provides `{habitat-config}/foo/bar.hbt-000.json`
    - B is merged into A, overriding duplicate attributes, forming the result `Merge(B, A)`
- - Module C provides `{habitat-config}/foo/bar.hbtprio-050.json`
+ - Module C provides `{habitat-config}/foo/bar.hbt-050.json`
    - C is merged into `Merge(B, A)`, forming the result `Merge(C, Merge(B, A))`
- - Module D provides `{habitat-config}/foo/bar.hbtprio-050.json`
-   - Merge order between C and D is undefined, since they share the exact same name, the result of that undefined merge is merged into `Merge(B, A)`
- - Module E provides `{habitat-config}/foo/bar.hbtprio-override-050.json`
-   - Overrides are applied after merging of the same priority, the result will be the config file of Module E
- - Module F provides `{habitat-config}/foo/bar.hbtprio-100.json`
-   - F is merged into E, which previously overrode the current config for `bar.json`, forming the result `Merge(F, E)`
- - Module G provides `{habitat-config}/foo/bar.hbtprio-override-999.json`
-   - This config file takes absolute precedence and will be the final result for `bar.json`
+ - Module D provides `{habitat-config}/foo/bar.hbt-050.json`
+   - Merge order between C and D is determined by order in `APP_MODULES`, since the files share the exact same name, same file name prioritization is resolved before instruction based prioritization
+   - The result is `Merge(Merge(C, D), Merge(B, A))` since modules later in the list override earlier ones
+ - Module E provides `{habitat-config}/foo/bar.hbt-o-050.json`
+   - Overrides are applied after merging of the same priority, the result would now simply be the config file of Module E
+ - Module F provides `{habitat-config}/foo/bar.hbt-100.json`
+   - F is merged into E, which previously overrode the current config, forming the result `Merge(F, E)`
+ - Module G provides `{habitat-config}/foo/bar.hbt-override-999.json`
+   - This config file takes the highest precedence possible and will be the final result for the config file `bar.json`
 
 ### Run the Sidecar
 
- - In your module's compose.yml define a habitat-config sidecar container according to the [example compose.yml](./examples/compose.yml).
+ - In your module's compose.yml define a habitat-config sidecar container according to the [example compose.yml](./examples/compose.provider.yml).
 
 ### Consume Configuration
 
-To consume configuration means to apply merging and overrides according to the rules, then make the configuration available to one or multiple services inside your module in a form they expect.
+To consume configuration means to move the result of merging and overrides to places where your module's services accept them, if the same config is used for multiple services you can also transform the configuration for each one of them.
 
 To consume configuration you must define a consumer script inside the `habitat-config/.consume` folder of your module.
 
-It must be a shell script and the name of the script is the "name of the consumer".
+It must be an executable shell script and the name of the script is the "name of the consumer".
 
 E.g. `habitat-config/.consume/my_service_consumer.sh` defines that your sidecar will manage configuration files that other modules (or your own) place inside `habitat-config/my_service_consumer`.
 
-The script is called after all modules have started and made their configuration available via the shared `habitat-config` volume.
+The script is called as a final step after the configuration provided by all modules has been merged, prioritized and/ or overriden according to the above rules.
 
-The script receives one argument, the "source path", containing one folder for each module that provided configuration for your consumer. \
-The source path may therefore be an empty directory.
+The script receives one argument, the "source path", at which the configuration files can be found. \
+If no modules provided any configuration, the directory may be empty, but it should always exist.
 
-After applying merges and overrides your consumer can copy the final configuration to other mounted volumes which can be mounted in other services of your modules.
-By convention you should mount these volumes at `/habitat-config/target/my_service_consumer` within your sidecar container.
+The simplest form of a consumer script just removes old configuration and copies over the new configuration to a volume shared with a service that will use the files.
 
-You can check the habitat-path module's [traefik config consumer](https://github.com/Tschebbischeff/habitat-path/blob/main/habitat-config/.consume/traefik.sh) to see how a consumer script could be defined.
+Example:
+
+```sh
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SOURCE_PATH="$1"; [ -d "$SOURCE_PATH" ] || { echo "'$SOURCE_PATH' not found."; exit 1; }
+TARGET_PATH="/habitat-config/target/MY_MOUNTED_VOLUME"; [ -d "$TARGET_PATH" ] || { echo "'$TARGET_PATH' not mounted."; exit 1; }
+
+echo "Cleaning previous configuration at '$TARGET_PATH'"
+rm -rf "${TARGET_PATH:?}/"{*,.*} &>/dev/null
+
+echo "Copying new configuration to '$TARGET_PATH'"
+cp -rp "$MERGE_PATH/." "$TARGET_PATH/"
+
+exit 0
+```
+
+This would require a named docker volume, mounted at the path `/habitat-config/target/MY_MOUNTED_VOLUME` which can also be mounted to other services that require the config.
+
+If the service requiring the configuration should wait for the configuration to be finalized, add a depends_on condition to your compose.yml file:
+
+```yaml
+depends_on:
+  habitat-config-YOURMODULENAME:
+    condition: service_completed_successfully
+```
+
+The following dependencies are available for your consumer script to use:
+ - jq
+ - yq
+ - grep
+ - find (GNU version)
 
 
 ## Build

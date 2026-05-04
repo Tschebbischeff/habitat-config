@@ -5,11 +5,11 @@
 [ -z "${APP_SESSION_ID}" ] && { echo "No APP_SESSION_ID provided, cannot synchronize configuration."; exit 1; }
 [ -z "${MODULE_NAME}" ] && { echo "No MODULE_NAME provided, cannot synchronize configuration."; exit 1; }
 
-ORCH_PATH="/habitat-config/orchestration"
+ORCH_PATH="$(pwd)/orchestration"
 ORCH_SESSION_PATH="$ORCH_PATH/${APP_SESSION_ID}"
-SRC_PATH="/habitat-config/source"
+SOURCE_PATH="$(pwd)/source"
 declare -a CONSUMERS
-[ -d "$SRC_PATH/.consume" ] && for filePath in "$SRC_PATH/.consume/"*; do
+[ -d "$SOURCE_PATH/.consume" ] && for filePath in "$SOURCE_PATH/.consume/"*; do
     fileName="$(basename "$filePath")"
     fileExtension="${fileName##*.}"
     [ "$fileExtension" != "sh" ] && continue
@@ -54,7 +54,7 @@ while :; do
     for moduleName in "${MODULES[@]}"; do
         [ -f "$ORCH_SESSION_PATH/.$moduleName.started" ] || allStarted=""
     done
-    [ -n "$allStarted" ] && break
+    [ "$allStarted" ] && break
 done
 echo "All modules started."
 
@@ -64,7 +64,7 @@ echo "All modules started."
 echo "*** Providing configuration..."
 
 anyProviders=""
-for serviceSrcPath in "$SRC_PATH/"*; do
+for serviceSrcPath in "$SOURCE_PATH/"*; do
     anyProviders="_"
     consumerName="$(basename "$serviceSrcPath")"
     if [ ! -d "$ORCH_SESSION_PATH/$consumerName" ]; then
@@ -90,7 +90,7 @@ if [ "${#CONSUMERS[@]}" -gt "0" ]; then
         for moduleName in "${MODULES[@]}"; do
             [ -f "$ORCH_SESSION_PATH/.$moduleName.finished" ] || allFinished=""
         done
-        [ -n "$allFinished" ] && break
+        [ "$allFinished" ] && break
     done
     echo "All modules finished providing stage."
     for consumerName in "${CONSUMERS[@]}"; do
@@ -98,7 +98,7 @@ if [ "${#CONSUMERS[@]}" -gt "0" ]; then
             echo "No modules have provided configuration for target '$consumerName', skipping execution of consumer."
         fi
         echo "Starting consumer for target '$consumerName'..."
-        "$SRC_PATH/.consume/$consumerName.sh" "$ORCH_SESSION_PATH/$consumerName"
+        "./consumer.sh" "$ORCH_SESSION_PATH/$consumerName" "$SOURCE_PATH/.consume/$consumerName.sh"
         exitCode="$?"
         if [ "$exitCode" -ne "0" ]; then
             echo "Consumer for target '$consumerName' failed with exit code: $exitCode"

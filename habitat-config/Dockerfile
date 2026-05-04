@@ -2,7 +2,14 @@ FROM alpine
 
 RUN apk -U add bash jq yq findutils grep
 
-COPY ./update-config.sh /update-config.sh
-RUN chmod +x /update-config.sh
+RUN mkdir -p /habitat-config
 
-CMD [ "/update-config.sh" ]
+COPY ./update-config.sh /habitat-config/update-config.sh
+RUN chmod +x /habitat-config/update-config.sh
+
+COPY ./consumer.sh /habitat-config/consumer.sh
+RUN chmod +x /habitat-config/consumer.sh
+
+WORKDIR /habitat-config
+
+CMD [ "/habitat-config/update-config.sh" ]

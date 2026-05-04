@@ -15,7 +15,7 @@ while [ "$#" -gt "0" ]; do
     shift
 done
 
-[ -n "$pushAfterBuild" ] && [ -z "$repositoryNamespace" ] && { echo "When pushing a repository name must be supplied."; exit 1; }
+[ "$pushAfterBuild" ] && [ -z "$repositoryNamespace" ] && { echo "When pushing a repository name must be supplied."; exit 1; }
 
 currentVersion="$(cat ./metadata.json | jq -r '.version')"
 currentVersionMaj="$(echo "$currentVersion" | grep -Po '^(0|[1-9][0-9]*)')"
@@ -30,13 +30,13 @@ docker buildx create \
     --name habitat-config-builder
 
 docker buildx build \
-    -t "$([ -n "$repositoryNamespace" ] && echo "$repositoryNamespace/")habitat-config:$currentVersionMajMinPat" \
-    -t "$([ -n "$repositoryNamespace" ] && echo "$repositoryNamespace/")habitat-config:$currentVersionMajMin" \
-    -t "$([ -n "$repositoryNamespace" ] && echo "$repositoryNamespace/")habitat-config:$currentVersionMaj" \
-    -t "$([ -n "$repositoryNamespace" ] && echo "$repositoryNamespace/")habitat-config:latest" \
+    -t "$([ "$repositoryNamespace" ] && echo "$repositoryNamespace/")habitat-config:$currentVersionMajMinPat" \
+    -t "$([ "$repositoryNamespace" ] && echo "$repositoryNamespace/")habitat-config:$currentVersionMajMin" \
+    -t "$([ "$repositoryNamespace" ] && echo "$repositoryNamespace/")habitat-config:$currentVersionMaj" \
+    -t "$([ "$repositoryNamespace" ] && echo "$repositoryNamespace/")habitat-config:latest" \
     --platform "$PLATFORMS" \
     --builder habitat-config-builder \
-    "$([ -n "$pushAfterBuild" ] && echo "--push")" \
+    "$([ "$pushAfterBuild" ] && echo "--push")" \
     ./habitat-config
 
 docker buildx stop habitat-config-builder
