@@ -14,17 +14,19 @@ Each of the modules is designed as an opinionated docker stack that can be deplo
 ## Available Modules
 
  - **[Path](https://github.com/Tschebbischeff/habitat-path)** \
- Connectivity and Routing
+ Network routing and reverse proxy
  - **[Scent](https://github.com/Tschebbischeff/habitat-scent)** \
- Authentication and User Management
+ Identity provider, LDAP directory and access control
  - **[Chatter](https://github.com/Tschebbischeff/habitat-chatter)** \
- Communication between modules
+ Message queue for realtime communication between modules
+ - **[Sight](https://github.com/Tschebbischeff/habitat-sight)** \
+ Real-time video streaming
  - **[Hoard](https://github.com/Tschebbischeff/habitat-hoard)** \
- Data storage
+ Time-series database and persistent storage
  - **[Vigil](https://github.com/Tschebbischeff/habitat-vigil)** \
- Monitoring
+ Device monitoring, visualization and alerting
  - **[Vista](https://github.com/Tschebbischeff/habitat-vista)** \
- Dashboards and User Interfaces
+ Central dashboards and device entry points
 
 ## Our Principles
 
