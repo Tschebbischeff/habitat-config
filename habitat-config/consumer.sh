@@ -28,6 +28,23 @@ overrideFile() {
     cp -f "$sourceFile" "$targetFile"
 }
 
+executeTransformer() {
+    # Execute script file "$1" (transformer script) with argument "$2" (target file to transform), then write result to
+    local transformerScript="$1"
+    local targetFile="$2"
+    echo "Using '${transformerScript#"$SOURCE_PATH/"}' to transform '${targetFile#"$SOURCE_PATH/"}'"
+    mkdir -p "$(dirname -- "$targetFile")"
+    touch "$targetFile"
+    local transformerExitCode="0"
+    mergedFileContents="$("$transformerScript" "$targetFile")"
+    transformerExitCode="$?"
+    if [ "$transformerExitCode" -eq "0" ]; then
+        echo "$mergedFileContents" >"$targetFile"
+    else
+        echo "Error: Transformation script returned exit code '$transformerExitCode', leaving untransformed config file untouched."
+    fi
+}
+
 mergeJSON() {
     # Merge file "$2" into file "$3", overriding duplicate object attributes on the deepest level possible, concatenating arrays if "$1" is non-empty
     local concatArrays="$1"
@@ -86,11 +103,23 @@ for moduleName in "${MODULES[@]}"; do
     echo "* Merging configuration provided by '$moduleName' module..."
     (
         cd "$SOURCE_PATH/$moduleName"
-        find . \( -name '*.yml' -o -name '*.yaml' \) -type f -printf '%P\n' | sort | while read -r cfgRelFilePath; do
-            mergeYAML "" "$SOURCE_PATH/$moduleName/$cfgRelFilePath" "$MERGE_PATH/$cfgRelFilePath"
-        done
-        find . -name '*.json' -type f -printf '%P\n' | sort | while read -r cfgRelFilePath; do
-            mergeJSON "" "$SOURCE_PATH/$moduleName/$cfgRelFilePath" "$MERGE_PATH/$cfgRelFilePath"
+        find . -type f -printf '%P\n' | sort | while read -r cfgRelFilePath; do
+            cfgFileName="$(basename -- "$cfgRelFilePath")"
+            cfgFileExtension="${cfgFileName##*.}"
+            sourceFile="$SOURCE_PATH/$moduleName/$cfgRelFilePath"
+            targetFile="$MERGE_PATH/$cfgRelFilePath"
+            case "$cfgFileExtension" in
+                "yml" | "yaml")
+                    mergeYAML "" "$sourceFile" "$targetFile"
+                ;;
+                "json")
+                    mergeJSON "" "$sourceFile" "$targetFile"
+                ;;
+                "sh") ;;
+                *)
+                    overrideFile "$sourceFile" "$targetFile"
+                ;;
+            esac
         done
     )
 done
@@ -98,7 +127,7 @@ done
 echo "* Evaluating priorities and overrides..."
 (
     cd "$MERGE_PATH"
-    find . -name '*.yml' -type f -printf '%P\n' | sort | while read -r cfgRelFilePath; do
+    find . -type f -printf '%P\n' | sort | while read -r cfgRelFilePath; do
         cfgFileName="$(basename -- "$cfgRelFilePath")"
         cfgFileExtension="${cfgFileName##*.}"
         cfgFileBaseName="${cfgFileName%.*}"
@@ -115,13 +144,36 @@ echo "* Evaluating priorities and overrides..."
         echo "$cfgFileInstructions" | grep -Pq '^a-' && cfgFileConcatArrays="_"
         sourceFile="$MERGE_PATH/$cfgRelFilePath"
         targetFile="$MERGE_PATH/$(dirname -- "$cfgRelFilePath")/$cfgFileBaseName.$cfgFileExtension"
-        { [ "$cfgFileShouldOverride" ] && overrideFile "$sourceFile" "$targetFile"; } || {
-            [[ "$cfgFileExtension" =~ yml|yaml ]] && mergeYAML "$cfgFileConcatArrays" "$sourceFile" "$targetFile"
-            [[ "$cfgFileExtension" =~ json ]] && mergeJSON "$cfgFileConcatArrays" "$sourceFile" "$targetFile"
-        }
+        { [ "$cfgFileShouldOverride" ] && overrideFile "$sourceFile" "$targetFile"; } || \
+        case "$cfgFileExtension" in
+            "yml" | "yaml")
+                mergeYAML "$cfgFileConcatArrays" "$sourceFile" "$targetFile"
+            ;;
+            "json")
+                mergeJSON "$cfgFileConcatArrays" "$sourceFile" "$targetFile"
+            ;;
+            *)
+                echo "Warning: Merge not supported for extension '$cfgFileExtension', overriding instead"
+                overrideFile "$sourceFile" "$targetFile"
+            ;;
+        esac
         rm "$sourceFile"
     done
 )
+
+for moduleName in "${MODULES[@]}"; do
+    [ ! -d "$SOURCE_PATH/$moduleName" ] && continue
+    echo "* Executing transformation scripts from '$moduleName' module..."
+    (
+        cd "$SOURCE_PATH/$moduleName"
+        find . -name '*.sh' -type f -printf '%P\n' | sort | while read -r cfgRelFilePath; do
+            [ -x "$cfgRelFilePath" ] || continue
+            cfgFileName="$(basename -- "$cfgRelFilePath")"
+            cfgFileBaseName="${cfgFileName%.*}"
+            executeTransformer "$SOURCE_PATH/$moduleName/$cfgRelFilePath" "$MERGE_PATH/$(dirname -- "$cfgRelFilePath")/$cfgFileBaseName"
+        done
+    )
+done
 
 echo "Delegating to module consumer script '$MODULE_CONSUMER_SCRIPT'..."
 

@@ -85,6 +85,28 @@ Extensive Example:
  - Module G provides `{habitat-config}/foo/bar.hbt-o-999.json`
    - This config file takes the highest precedence possible and will be the final result for the config file `bar.json`
 
+### Manually transforming Files
+
+You can define a executable file that is supposed to transform the configuration file `{habitat-config}/foo/bar.yml` by including a file at the same path inside your module and giving it the additional extension `.sh`, e.g. `{habitat-config}/foo/bar.yml.sh`.
+
+The script is called after all initial merges, overrides and prioritizations have been applied and receives the path to the target configuration file as its only argument.
+
+The output of the script is used as the new configuration file at that target path if the script returns with exit code zero.
+
+Example, replace all occurrences of `foo` with `bar` in the target configuration file:
+```sh
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+TARGET_FILE="$1"
+TARGET_FILE_CONTENT="$(cat "$TARGET_FILE")"
+
+echo "$TARGET_FILE_CONTENT" | sed 's/foo/bar/g'
+
+exit 0
+```
+
 ### Run the Sidecar
 
  - In your module's compose.yml define a habitat-config sidecar container according to the [example compose.yml](./examples/compose.provider.yml).
