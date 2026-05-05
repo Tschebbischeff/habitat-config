@@ -87,7 +87,7 @@ for moduleName in "${MODULES[@]}"; do
     (
         cd "$SOURCE_PATH/$moduleName"
         find . \( -name '*.yml' -o -name '*.yaml' \) -type f -printf '%P\n' | sort | while read -r cfgRelFilePath; do
-            mergeYAML "$SOURCE_PATH/$moduleName/$cfgRelFilePath" "$MERGE_PATH/$cfgRelFilePath"
+            mergeYAML "" "$SOURCE_PATH/$moduleName/$cfgRelFilePath" "$MERGE_PATH/$cfgRelFilePath"
         done
         find . -name '*.json' -type f -printf '%P\n' | sort | while read -r cfgRelFilePath; do
             mergeJSON "" "$SOURCE_PATH/$moduleName/$cfgRelFilePath" "$MERGE_PATH/$cfgRelFilePath"
