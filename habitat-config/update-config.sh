@@ -96,6 +96,7 @@ if [ "${#CONSUMERS[@]}" -gt "0" ]; then
     for consumerName in "${CONSUMERS[@]}"; do
         if [ -z "$(ls -A "$ORCH_SESSION_PATH/$consumerName")" ]; then
             echo "No modules have provided configuration for target '$consumerName', skipping execution of consumer."
+            continue
         fi
         echo "Starting consumer for target '$consumerName'..."
         "./consumer.sh" "$ORCH_SESSION_PATH/$consumerName" "$SOURCE_PATH/.consume/$consumerName.sh"
