@@ -54,14 +54,12 @@ This is not a Habitat module on its own, its designed as an interface so modules
 
 You can merge or override configuration files supplied by other modules via the filename. \
 A configuration file's base name (before extension) can be suffixed with instructions for prioritization and overriding, e.g.:
- - `base.hbt-000.yml` to prioritize this file over `base.yml`
- - `base.hbt-override-000.yml` to override `base.yml` with this file
- - The `override` keyword can be shortened to `over` or just `o`, i.e. `base.hbt-over-000.yml` and `base.hbt-o-000.yml` can be used aswell
-   - Should multiple files exist, which differ only in the form of the override keyword the order of overrides is shortest first: \
-   `base.hbt-o-000.yml` | `base.hbt-over-000-yml` | `base.hbt-override-000.yml`
+ - `base.hbt-000.yml` to merge this file into `base.yml` with arrays being overwritten
+ - `base.hbt-a-000.yml` to merge this file into `base.yml` with arrays being concatenated
+ - `base.hbt-o-000.yml` to fully override `base.yml` with this file
 
 The prioritization number at the end applies as follows: \
-`base.yml` < `base.hbt-000.yml` < `base.hbt-001.yml` | `base.hbt-o-001.yml` | `base.hbt-over-001.yml` | `base.hbt-override-001.yml` < `base.hbt-002.yml`
+`base.yml` < `base.hbt-000.yml` < `base.hbt-001.yml` < `base.hbt-a-001.yml` | `base.hbt-o-001.yml` < `base.hbt-002.yml`
 
 (`A < B` means B is merged into A; `... | C` means all previous files are replaced by C) \
 
@@ -82,7 +80,7 @@ Extensive Example:
    - Overrides are applied after merging of the same priority, the result would now simply be the config file of Module E
  - Module F provides `{habitat-config}/foo/bar.hbt-100.json`
    - F is merged into E, which previously overrode the current config, forming the result `Merge(F, E)`
- - Module G provides `{habitat-config}/foo/bar.hbt-override-999.json`
+ - Module G provides `{habitat-config}/foo/bar.hbt-o-999.json`
    - This config file takes the highest precedence possible and will be the final result for the config file `bar.json`
 
 ### Run the Sidecar

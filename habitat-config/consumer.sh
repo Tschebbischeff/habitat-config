@@ -29,28 +29,55 @@ overrideFile() {
 }
 
 mergeJSON() {
-    # Merge file "$1" into file "$2", overriding duplicate object attributes on the deepest level possible, not merging arrays
-    local sourceFile="$1"
-    local targetFile="$2"
+    # Merge file "$2" into file "$3", overriding duplicate object attributes on the deepest level possible, concatenating arrays if "$1" is non-empty
+    local concatArrays="$1"
+    local sourceFile="$2"
+    local targetFile="$3"
     local mergedFileContents="";
     echo "Merging '${sourceFile#"$SOURCE_PATH/"}' into '${targetFile#"$SOURCE_PATH/"}'"
     mkdir -p "$(dirname -- "$targetFile")"
     touch "$targetFile"
-    # shellcheck disable=SC2016 # $item variable is part of yq expression and not to be expanded
-    mergedFileContents="$(jq -rs 'reduce .[] as $item ({}; . * $item)' "$targetFile" "$sourceFile")"
+    if [ "$concatArrays" ]; then
+        # shellcheck disable=SC2016 # $item variable is part of jq expression and not to be expanded
+        mergedFileContents="$(jq -rs 'reduce .[] as $item ({};
+        def deepmerge(a; b): a as $a | b as $b |
+            if ($a | type == "object") and ($b | type == "object") then
+                reduce (
+                    {a_keys: $a | keys_unsorted, b_keys: $b | keys_unsorted} | [.a_keys, .b_keys] | flatten | unique
+                )[] as $k ({}; .[$k] = deepmerge($a[$k]; $b[$k]))
+            elif ($a | type == "array") and ($b | type == "array") then
+                [$a, $b] | flatten
+            elif ($b | type == "null") then
+                $a
+            else
+                $b
+            end
+        ;
+        deepmerge(.; $item)
+        )' "$targetFile" "$sourceFile")"
+    else
+        # shellcheck disable=SC2016 # $item variable is part of jq expression and not to be expanded
+        mergedFileContents="$(jq -rs 'reduce .[] as $item ({}; . * $item)' "$targetFile" "$sourceFile")"
+    fi
     echo "$mergedFileContents" >"$targetFile"
 }
 
 mergeYAML() {
-    # Merge file "$1" into file "$2", overriding duplicate object attributes on the deepest level possible, not merging arrays
-    local sourceFile="$1"
-    local targetFile="$2"
+    # Merge file "$1" into file "$2", overriding duplicate object attributes on the deepest level possible, concatenating arrays if "$1" is non-empty
+    local concatArrays="$1"
+    local sourceFile="$2"
+    local targetFile="$3"
     local mergedFileContents="";
     echo "Merging '${sourceFile#"$SOURCE_PATH/"}' into '${targetFile#"$SOURCE_PATH/"}'"
     mkdir -p "$(dirname -- "$targetFile")"
     touch "$targetFile"
-    # shellcheck disable=SC2016 # $item variable is part of yq expression and not to be expanded
-    mergedFileContents="$(yq eval-all '. as $item ireduce ({}; . * $item )' "$targetFile" "$sourceFile")"
+    if [ "$concatArrays" ]; then
+        # shellcheck disable=SC2016 # $item variable is part of yq expression and not to be expanded
+        mergedFileContents="$(yq eval-all '. as $item ireduce ({}; . *+ $item )' "$targetFile" "$sourceFile")"
+    else
+        # shellcheck disable=SC2016 # $item variable is part of yq expression and not to be expanded
+        mergedFileContents="$(yq eval-all '. as $item ireduce ({}; . * $item )' "$targetFile" "$sourceFile")"
+    fi
     echo "$mergedFileContents" >"$targetFile"
 }
 
@@ -76,19 +103,21 @@ echo "* Evaluating priorities and overrides..."
         cfgFileExtension="${cfgFileName##*.}"
         cfgFileBaseName="${cfgFileName%.*}"
         cfgFileInstructions="${cfgFileBaseName##*.}"
-        if echo "$cfgFileInstructions" | grep -Pqv '^hbt-(o(ver(ride)?)?-)?[0-9]+$' || [ "$cfgFileInstructions" == "$cfgFileBaseName" ]; then
+        if echo "$cfgFileInstructions" | grep -Pqv '^hbt-(o-)?[0-9]+$' || [ "$cfgFileInstructions" == "$cfgFileBaseName" ]; then
             # No instructions found, this is a normal file that has already been merged => Skip
             continue
         fi
         cfgFileBaseName="${cfgFileBaseName%.*}"
         cfgFileInstructions="${cfgFileInstructions##hbt-}"
         cfgFileShouldOverride=""
-        echo "$cfgFileInstructions" | grep -Pq '^o(ver(ride)?)?-' && cfgFileShouldOverride="_"
+        echo "$cfgFileInstructions" | grep -Pq '^o-' && cfgFileShouldOverride="_"
+        cfgFileConcatArrays=""
+        echo "$cfgFileInstructions" | grep -Pq '^a-' && cfgFileConcatArrays="_"
         sourceFile="$MERGE_PATH/$cfgRelFilePath"
         targetFile="$MERGE_PATH/$(dirname -- "$cfgRelFilePath")/$cfgFileBaseName.$cfgFileExtension"
         { [ "$cfgFileShouldOverride" ] && overrideFile "$sourceFile" "$targetFile"; } || {
-            [[ "$cfgFileExtension" =~ yml|yaml ]] && mergeYAML "$sourceFile" "$targetFile"
-            [[ "$cfgFileExtension" =~ json ]] && mergeJSON "$sourceFile" "$targetFile"
+            [[ "$cfgFileExtension" =~ yml|yaml ]] && mergeYAML "$cfgFileConcatArrays" "$sourceFile" "$targetFile"
+            [[ "$cfgFileExtension" =~ json ]] && mergeJSON "$cfgFileConcatArrays" "$sourceFile" "$targetFile"
         }
         rm "$sourceFile"
     done
