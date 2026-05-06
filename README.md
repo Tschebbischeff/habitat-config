@@ -17,16 +17,16 @@ Each of the modules is designed as an opinionated docker stack that can be deplo
  Network routing and reverse proxy
  - **[Scent](https://github.com/Tschebbischeff/habitat-scent)** \
  Identity provider, LDAP directory and access control
+ - **[Vista](https://github.com/Tschebbischeff/habitat-vista)** \
+ Central dashboards and device entry points
  - **[Chatter](https://github.com/Tschebbischeff/habitat-chatter)** \
  Message queue for realtime communication between modules
- - **[Sight](https://github.com/Tschebbischeff/habitat-sight)** \
- Real-time video streaming
  - **[Hoard](https://github.com/Tschebbischeff/habitat-hoard)** \
  Time-series database and persistent storage
  - **[Vigil](https://github.com/Tschebbischeff/habitat-vigil)** \
  Device monitoring, visualization and alerting
- - **[Vista](https://github.com/Tschebbischeff/habitat-vista)** \
- Central dashboards and device entry points
+ - **[Sight](https://github.com/Tschebbischeff/habitat-sight)** \
+ Real-time video streaming
 
 ## Our Principles
 
