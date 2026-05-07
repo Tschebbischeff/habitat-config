@@ -4,9 +4,8 @@
 
 # Habitat: Config
 
-**🚧
-This project is currently under heavy development, any information may be subject to change.
-🚧**
+> [!CAUTION]
+> **🚧 This project is currently under heavy development, any information may be subject to change. 🚧**
 
 Habitat provides modular functionality for deployment on home lab devices. \
 Each of the modules is designed as an opinionated docker stack that can be deployed on its own or together with other modules by sharing the same docker network.
