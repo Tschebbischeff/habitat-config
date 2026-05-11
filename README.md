@@ -10,22 +10,7 @@
 Habitat provides modular functionality for deployment on home lab devices. \
 Each of the modules is designed as an opinionated docker stack that can be deployed on its own or together with other modules by sharing the same docker network.
 
-## Available Modules
-
- - **[Path](https://github.com/Tschebbischeff/habitat-path)** \
- Network routing and reverse proxy
- - **[Scent](https://github.com/Tschebbischeff/habitat-scent)** \
- Identity provider, LDAP directory and access control
- - **[Vista](https://github.com/Tschebbischeff/habitat-vista)** \
- Central dashboards and device entry points
- - **[Chatter](https://github.com/Tschebbischeff/habitat-chatter)** \
- Message queue for realtime communication between modules
- - **[Hoard](https://github.com/Tschebbischeff/habitat-hoard)** \
- Time-series database and persistent storage
- - **[Vigil](https://github.com/Tschebbischeff/habitat-vigil)** \
- Device monitoring, visualization and alerting
- - **[Sight](https://github.com/Tschebbischeff/habitat-sight)** \
- Real-time video streaming
+You can check out all officially available modules [here](https://github.com/Tschebbischeff/habitat#officially-available-modules).
 
 ## Our Principles
 
