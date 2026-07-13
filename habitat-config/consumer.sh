@@ -169,7 +169,7 @@ for moduleName in "${MODULES[@]}"; do
         find . -name '*...sh' -type f -printf '%P\n' | sort | while read -r cfgRelFilePath; do
             [ -x "$cfgRelFilePath" ] || continue
             cfgFileName="$(basename -- "$cfgRelFilePath")"
-            cfgFileBaseName="${cfgFileName%.*}"
+            cfgFileBaseName="${cfgFileName%...*}"
             executeTransformer "$SOURCE_PATH/$moduleName/$cfgRelFilePath" "$MERGE_PATH/$(dirname -- "$cfgRelFilePath")/$cfgFileBaseName"
         done
     )
