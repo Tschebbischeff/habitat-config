@@ -71,7 +71,7 @@ Extensive Example:
 
 ### Manually transforming Files
 
-You can define a executable file that is supposed to transform the configuration file `{habitat-config}/foo/bar.yml` by including a file at the same path inside your module and giving it the additional extension `.sh`, e.g. `{habitat-config}/foo/bar.yml.sh`.
+You can define a executable file that is supposed to transform the configuration file `{habitat-config}/foo/bar.yml` by including a file at the same path inside your module and giving it the additional extension `...sh`, e.g. `{habitat-config}/foo/bar.yml...sh`.
 
 The script is called after all initial merges, overrides and prioritizations have been applied and receives the path to the target configuration file as its only argument.
 
