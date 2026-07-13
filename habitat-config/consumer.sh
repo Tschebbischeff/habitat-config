@@ -115,7 +115,11 @@ for moduleName in "${MODULES[@]}"; do
                 "json")
                     mergeJSON "" "$sourceFile" "$targetFile"
                 ;;
-                "sh") ;;
+                "sh")
+                    if [ "${cfgFileName##*...}" != "sh" ]; then
+                        overrideFile "$sourceFile" "$targetFile"
+                    fi
+                ;;
                 *)
                     overrideFile "$sourceFile" "$targetFile"
                 ;;
