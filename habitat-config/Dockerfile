@@ -1,6 +1,7 @@
 FROM alpine
 
-RUN apk -U add bash jq yq findutils grep
+RUN apk -U add bash jq yq findutils grep gettext-envsubst
+
 
 RUN mkdir -p /habitat-config
 
