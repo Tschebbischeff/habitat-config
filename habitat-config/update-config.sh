@@ -73,6 +73,9 @@ for serviceSrcPath in "$SOURCE_PATH/"*; do
     fi
     echo "Copying configuration for target '$consumerName'..."
     cp -rp "$serviceSrcPath" "$ORCH_SESSION_PATH/$consumerName/${MODULE_NAME}"
+    if [ -f "$SOURCE_PATH/.transform/$consumerName.sh" ]; then
+        "$SOURCE_PATH/.transform/$consumerName.sh" "$ORCH_SESSION_PATH/$consumerName/${MODULE_NAME}"
+    fi
 done
 [ -z "$anyProviders" ] && echo "This module does not provide any configuration."
 touch "$ORCH_SESSION_PATH/.${MODULE_NAME}.finished"
