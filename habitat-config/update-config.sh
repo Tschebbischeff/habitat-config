@@ -74,7 +74,15 @@ for serviceSrcPath in "$SOURCE_PATH/"*; do
     echo "Copying configuration for target '$consumerName'..."
     cp -rp "$serviceSrcPath" "$ORCH_SESSION_PATH/$consumerName/${MODULE_NAME}"
     if [ -f "$SOURCE_PATH/.transform/$consumerName.sh" ]; then
+        echo "Found provider-side transformation script for '$consumerName', executing..."
         "$SOURCE_PATH/.transform/$consumerName.sh" "$ORCH_SESSION_PATH/$consumerName/${MODULE_NAME}"
+        exitCode="$?"
+        if [ "$exitCode" -eq "0" ]; then
+            echo "Transformation script finished successfully"
+        else
+            echo "Transformation script failed with exit code '$exitCode', removing copied configuration."
+            rm -rf "$ORCH_SESSION_PATH/$consumerName/${MODULE_NAME}"
+        fi
     fi
 done
 [ -z "$anyProviders" ] && echo "This module does not provide any configuration."

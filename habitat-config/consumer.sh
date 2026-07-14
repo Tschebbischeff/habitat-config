@@ -167,7 +167,7 @@ echo "* Evaluating priorities and overrides..."
 
 for moduleName in "${MODULES[@]}"; do
     [ ! -d "$SOURCE_PATH/$moduleName" ] && continue
-    echo "* Executing transformation scripts from '$moduleName' module..."
+    echo "* Executing consumer-side transformation scripts from '$moduleName' module..."
     (
         cd "$SOURCE_PATH/$moduleName"
         find . -name '*...sh' -type f -printf '%P\n' | sort | while read -r cfgRelFilePath; do
