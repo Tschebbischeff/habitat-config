@@ -69,11 +69,52 @@ Extensive Example:
  - Module G provides `{habitat-config}/foo/bar.hbt-o-999.json`
    - This config file takes the highest precedence possible and will be the final result for the config file `bar.json`
 
-### Manually transforming Files
+### Transforming Configuration
 
-You can define a executable file that is supposed to transform the configuration file `{habitat-config}/foo/bar.yml` by including a file at the same path inside your module and giving it the additional extension `...sh`, e.g. `{habitat-config}/foo/bar.yml...sh`.
+#### Before Merging / Provider-side Transformation
 
-The script is called after all initial merges, overrides and prioritizations have been applied and receives the path to the target configuration file as its only argument.
+> [!CAUTION]
+> Pre-merge transformation is executed inside the configuration sidecar of the module that is **providing** the configuration. \
+> Environment variables and secrets exposed to the configuration sidecar of the module that is consuming the configuration files are *not* available in this context.
+
+You can provide a folder called `.transform` with executable scripts that share the same name as a first-level folder within the `{habitat-config}` folder (i.e. the name of the consuming module).
+
+This script is called with a single argument, which is the file path to which the provided configuration was copied and from which it will be transformed further by merges and overrides.
+
+The script may then transform the files within that path freely before the merges and overrides are applied in the next stage.
+
+Should the script exit with an exit-code other than zero, all of the copied configuration will be removed and not available to the consuming module.
+
+Example, apply environment variable substitution to all .yml files after exporting secrets exposed to the provider-side sidecar as variables before handing the configuration to the consumer-side:
+```sh
+#!/usr/bin/env bash
+
+SOURCE_PATH="$1"
+
+export SOME_SECRET="$(cat "/run/secrets/SOME_SECRET")"
+
+find "$SOURCE_PATH" -type f -name '*.yml' | while read -r filePath; do
+    if envsubst <"$filePath" >"$filePath.envsubst"; then
+        mv "$filePath.envsubst" "$filePath"
+    else
+        rm "$filePath.envsubst" &>/dev/null
+    fi
+done
+```
+
+> [!WARNING]
+> Note that this will expose the secret `SOME_SECRET` in clear text within the configuration files and may thus not be suited to all use-cases. \
+> *Use this pattern with utmost caution.*
+
+#### After Merging / Consumer-side Transformation
+
+> [!CAUTION]
+> Post-merge transformation is executed inside the configuration sidecar of the module that is **consuming** the configuration. \
+> Environment variables and secrets exposed to the configuration sidecar of the module that is providing the configuration files are *not* available in this context.
+
+You can define a executable file that is supposed to transform the configuration file `{habitat-config}/foo/bar.yml` by including a file at the same path inside your module and giving it the additional suffix/ extension `...sh`, e.g. `{habitat-config}/foo/bar.yml...sh`.
+
+The script is called **after** all initial merges, overrides and prioritizations have been applied and receives the path to the target configuration file as its only argument.
 
 The output of the script is used as the new configuration file at that target path if the script returns with exit code zero.
 
