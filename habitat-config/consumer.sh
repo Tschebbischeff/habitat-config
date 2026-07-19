@@ -136,7 +136,7 @@ echo "* Evaluating priorities and overrides..."
         cfgFileExtension="${cfgFileName##*.}"
         cfgFileBaseName="${cfgFileName%.*}"
         cfgFileInstructions="${cfgFileBaseName##*.}"
-        if echo "$cfgFileInstructions" | grep -Pqv '^hbt-(o-)?[0-9]+$' || [ "$cfgFileInstructions" == "$cfgFileBaseName" ]; then
+        if echo "$cfgFileInstructions" | grep -Pqv '^hbt-([oa]-)?[0-9]+$' || [ "$cfgFileInstructions" == "$cfgFileBaseName" ]; then
             # No instructions found, this is a normal file that has already been merged => Skip
             continue
         fi
