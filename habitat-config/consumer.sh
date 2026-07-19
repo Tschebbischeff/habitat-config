@@ -106,14 +106,22 @@ for moduleName in "${MODULES[@]}"; do
         find . -type f -printf '%P\n' | sort | while read -r cfgRelFilePath; do
             cfgFileName="$(basename -- "$cfgRelFilePath")"
             cfgFileExtension="${cfgFileName##*.}"
+            cfgFileBaseName="${cfgFileName%.*}"
+            cfgFileInstructions="${cfgFileBaseName##*.}"
+            cfgFileInstructions="${cfgFileInstructions##hbt-}"
+            cfgFileShouldOverride=""
+            echo "$cfgFileInstructions" | grep -Pq '^o-' && cfgFileShouldOverride="_"
+            cfgFileConcatArrays=""
+            echo "$cfgFileInstructions" | grep -Pq '^a-' && cfgFileConcatArrays="_"
             sourceFile="$SOURCE_PATH/$moduleName/$cfgRelFilePath"
             targetFile="$MERGE_PATH/$cfgRelFilePath"
+            { [ "$cfgFileShouldOverride" ] && overrideFile "$sourceFile" "$targetFile"; } || \
             case "$cfgFileExtension" in
                 "yml" | "yaml")
-                    mergeYAML "" "$sourceFile" "$targetFile"
+                    mergeYAML "$cfgFileConcatArrays" "$sourceFile" "$targetFile"
                 ;;
                 "json")
-                    mergeJSON "" "$sourceFile" "$targetFile"
+                    mergeJSON "$cfgFileConcatArrays" "$sourceFile" "$targetFile"
                 ;;
                 "sh")
                     if [ "${cfgFileName##*...}" != "sh" ]; then
