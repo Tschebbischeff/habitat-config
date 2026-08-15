@@ -24,6 +24,7 @@ You can check out all officially available modules [here](https://github.com/Tsc
  Based on priority numbers select which module's configuration takes precedence in merging or whether to completely override a configuration file.
 
 ### Planned
+
  - **Generalized Merge and Override Logic** \
  Modules implementing consumers should simply get the result of the merge and override for the most common config file types (YAML, JSON, INI, etc.)
 
