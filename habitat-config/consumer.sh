@@ -56,7 +56,7 @@ mergeJSON() {
     touch "$targetFile"
     if [ "$concatArrays" ]; then
         # shellcheck disable=SC2016 # $item variable is part of jq expression and not to be expanded
-        mergedFileContents="$(jq -rs 'reduce .[] as $item ({};
+        mergedFileContents="$(jq -rs 'reduce .[] as $item (null;
         def deepmerge(a; b): a as $a | b as $b |
             if ($a | type == "object") and ($b | type == "object") then
                 reduce (
@@ -74,7 +74,20 @@ mergeJSON() {
         )' "$targetFile" "$sourceFile")"
     else
         # shellcheck disable=SC2016 # $item variable is part of jq expression and not to be expanded
-        mergedFileContents="$(jq -rs 'reduce .[] as $item ({}; . * $item)' "$targetFile" "$sourceFile")"
+        mergedFileContents="$(jq -rs 'reduce .[] as $item (null;
+        def deepmerge(a; b): a as $a | b as $b |
+            if ($a | type == "object") and ($b | type == "object") then
+                $a * $b
+            elif ($a | type == "array") and ($b | type == "array") then
+                $b
+            elif $b | type == "null" then
+                $a
+            else
+                $b
+            end
+        ;
+        deepmerge(.; $item)
+        )' "$targetFile" "$sourceFile")"
     fi
     echo "$mergedFileContents" >"$targetFile"
 }
